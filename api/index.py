@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -10,7 +10,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -21,15 +21,12 @@ class AnalyticsRequest(BaseModel):
     threshold_ms: float
 
 @app.options("/")
-async def options_handler():
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-        }
-    )
+async def options_root():
+    return JSONResponse({}, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+    })
 
 @app.post("/")
 def analyze(req: AnalyticsRequest):
@@ -44,7 +41,6 @@ def analyze(req: AnalyticsRequest):
             "avg_uptime": round(float(np.mean(uptimes)), 4),
             "breaches": int(sum(1 for l in latencies if l > req.threshold_ms))
         }
-    return JSONResponse(
-        content=result,
-        headers={"Access-Control-Allow-Origin": "*"}
-    )
+    return JSONResponse(content=result, headers={
+        "Access-Control-Allow-Origin": "*"
+    })
